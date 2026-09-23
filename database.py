@@ -11,7 +11,6 @@ def init_db():
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
 
-    # Adicionado game_id (para o AutoCR) e ticket_count
     cursor.execute('''
         CREATE TABLE monitored_items (
             id INTEGER PRIMARY KEY AUTOINCREMENT,

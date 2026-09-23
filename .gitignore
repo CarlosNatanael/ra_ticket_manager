@@ -5,7 +5,10 @@ __pycache__/
 
 # C extensions
 *.so
-.env
+
+# Banco de Dados
+*.db
+*.sqlite3
 
 # Distribution / packaging
 .Python
