@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone, timedelta  
 from dotenv import load_dotenv
 import requests
 import sqlite3
@@ -12,6 +12,10 @@ RA_USER = os.getenv('RA_API_USER')
 RA_KEY = os.getenv('RA_API_KEY')
 
 RA_API_BASE = "https://retroachievements.org/API/"
+
+# Fuso horário de Brasília (UTC-3)
+fuso_br = timezone(timedelta(hours=-3))
+agora = datetime.now(fuso_br).strftime("%d/%m/%Y às %H:%M:%S")
 
 def send_discord_alert(item, ticket_id, ticket_note):
     tipo = "Conquista" if item['item_type'] == 'achievement' else "Jogo"
