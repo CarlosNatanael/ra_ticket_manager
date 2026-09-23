@@ -1,6 +1,7 @@
-from flask import Flask, render_template, request, redirect, url_for
-from datetime import datetime
+from flask import Flask, render_template, request, redirect, url_for, Response
 from dotenv import load_dotenv
+from datetime import datetime
+from functools import wraps
 import requests
 import sqlite3
 import os
@@ -12,6 +13,26 @@ DB_NAME = 'ticket_manager.db'
 RA_USER = os.getenv('RA_API_USER')
 RA_KEY = os.getenv('RA_API_KEY')
 RA_API_BASE = "https://retroachievements.org/API/"
+
+ADMIN_USER = os.getenv('ADMIN_USER')
+ADMIN_PASS = os.getenv('ADMIN_PASS')
+
+def check_auth(username, password):
+    return username == ADMIN_USER and password == ADMIN_PASS
+
+def authenticate():
+    return Response(
+        'Acesso restrito. Por favor, insira as credenciais corretas.\n', 401,
+        {'WWW-Authenticate': 'Basic realm="RA Ticket Manager"'})
+
+def requires_auth(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        auth = request.authorization
+        if not auth or not check_auth(auth.username, auth.password):
+            return authenticate()
+        return f(*args, **kwargs)
+    return decorated
 
 def get_db_connection():
     conn = sqlite3.connect(DB_NAME)
@@ -26,6 +47,7 @@ def get_db_connection():
     return conn
 
 @app.route('/')
+@requires_auth
 def monitor():
     conn = get_db_connection()
     items = conn.execute('SELECT * FROM monitored_items').fetchall()
@@ -37,10 +59,12 @@ def monitor():
     return render_template('monitor.html', items=items, last_sync=last_sync)
 
 @app.route('/add_view')
+@requires_auth
 def add_view():
     return render_template('add.html')
 
 @app.route('/add', methods=['POST'])
+@requires_auth
 def add():
     game_id = request.form['game_id']
     achievement_id = request.form.get('achievement_id', '')
@@ -96,6 +120,7 @@ def add():
     return redirect(url_for('monitor'))
 
 @app.route('/delete/<int:item_id>', methods=['POST'])
+@requires_auth
 def delete(item_id):
     conn = get_db_connection()
     conn.execute('DELETE FROM monitored_items WHERE id = ?', (item_id,))
@@ -104,4 +129,4 @@ def delete(item_id):
     return redirect(url_for('monitor'))
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=False)
