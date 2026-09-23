@@ -19,7 +19,7 @@ def send_discord_alert(item, ticket_id, ticket_note):
     nota_limpa = ticket_note if ticket_note else "Sem descrição fornecida pelo jogador."
     
     mensagem = {
-        "content": f"**Novo Ticket Aberto!**\n"
+        "content": f"🚨 **Novo Ticket Aberto!**\n"
                    f"**Tipo:** {tipo}\n"
                    f"**ID Monitorado:** {ra_id}\n"
                    f"**Sua Anotação:** {item['notes']}\n"

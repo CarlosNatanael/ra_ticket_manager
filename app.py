@@ -1,8 +1,16 @@
+import os
+import requests
 from flask import Flask, render_template, request, redirect, url_for
 import sqlite3
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__)
 DB_NAME = 'ticket_manager.db'
+RA_USER = os.getenv('RA_API_USER')
+RA_KEY = os.getenv('RA_API_KEY')
+RA_API_BASE = "https://retroachievements.org/API/"
 
 def get_db_connection():
     conn = sqlite3.connect(DB_NAME)
@@ -23,7 +31,7 @@ def add_view():
 @app.route('/add', methods=['POST'])
 def add():
     game_id = request.form['game_id']
-    achievement_id = request.form.get('achievement_id', None)
+    achievement_id = request.form.get('achievement_id', '')
     item_type = request.form['item_type']
     notes = request.form['notes']
 
@@ -31,11 +39,51 @@ def add():
         achievement_id = None
 
     if game_id and item_type:
+        title = "Desconhecido"
+        # Definindo o fallback padrão do RA (00000)
+        icon_url = "https://media.retroachievements.org/Badge/00000.png"
+
+        if item_type == 'game':
+            params = {'z': RA_USER, 'y': RA_KEY, 'i': game_id}
+            try:
+                resp = requests.get(f"{RA_API_BASE}API_GetGame.php", params=params, timeout=5)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    title = data.get('GameTitle', f'Jogo {game_id}')
+                    icon_path = data.get('ImageIcon', '')
+                    if icon_path:
+                        icon_url = f"https://media.retroachievements.org{icon_path}"
+            except Exception as e:
+                title = f'Jogo {game_id}'
+        else:
+            # É uma conquista: Puxamos os dados estendidos do jogo e filtramos a conquista exata
+            params = {'z': RA_USER, 'y': RA_KEY, 'i': game_id}
+            try:
+                resp = requests.get(f"{RA_API_BASE}API_GetGameExtended.php", params=params, timeout=5)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    achievements = data.get('Achievements', {})
+                    
+                    # A chave no dicionário de conquistas do RA é uma string do ID
+                    ach_data = achievements.get(str(achievement_id))
+                    
+                    if ach_data:
+                        title = ach_data.get('Title', f'Conquista {achievement_id}')
+                        badge = ach_data.get('BadgeName', '00000')
+                        icon_url = f"https://media.retroachievements.org/Badge/{badge}.png"
+                    else:
+                        title = f'Conquista {achievement_id}'
+            except Exception as e:
+                title = f'Conquista {achievement_id}'
+
         conn = get_db_connection()
-        conn.execute('INSERT INTO monitored_items (game_id, achievement_id, item_type, notes) VALUES (?, ?, ?, ?)',
-                     (game_id, achievement_id, item_type, notes))
+        conn.execute('''
+            INSERT INTO monitored_items (game_id, achievement_id, item_type, notes, title, icon_url) 
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (game_id, achievement_id, item_type, notes, title, icon_url))
         conn.commit()
         conn.close()
+        
     return redirect(url_for('monitor'))
 
 @app.route('/delete/<int:item_id>', methods=['POST'])

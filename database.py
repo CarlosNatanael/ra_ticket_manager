@@ -18,7 +18,9 @@ def init_db():
             achievement_id INTEGER, 
             item_type TEXT NOT NULL CHECK(item_type IN ('game', 'achievement')),
             notes TEXT,
-            ticket_count INTEGER DEFAULT 0
+            ticket_count INTEGER DEFAULT 0,
+            title TEXT,
+            icon_url TEXT
         )
     ''')
 
@@ -33,7 +35,7 @@ def init_db():
 
     conn.commit()
     conn.close()
-    print("Banco de dados atualizado recriado com sucesso!")
+    print("Banco de dados com suporte a ícones recriado com sucesso!")
 
 if __name__ == '__main__':
     init_db()
