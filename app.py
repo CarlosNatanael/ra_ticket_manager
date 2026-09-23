@@ -1,0 +1,50 @@
+from flask import Flask, render_template, request, redirect, url_for
+import sqlite3
+
+app = Flask(__name__)
+DB_NAME = 'ticket_manager.db'
+
+def get_db_connection():
+    conn = sqlite3.connect(DB_NAME)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+@app.route('/')
+def monitor():
+    conn = get_db_connection()
+    items = conn.execute('SELECT * FROM monitored_items').fetchall()
+    conn.close()
+    return render_template('monitor.html', items=items)
+
+@app.route('/add_view')
+def add_view():
+    return render_template('add.html')
+
+@app.route('/add', methods=['POST'])
+def add():
+    game_id = request.form['game_id']
+    achievement_id = request.form.get('achievement_id', None)
+    item_type = request.form['item_type']
+    notes = request.form['notes']
+
+    if not achievement_id:
+        achievement_id = None
+
+    if game_id and item_type:
+        conn = get_db_connection()
+        conn.execute('INSERT INTO monitored_items (game_id, achievement_id, item_type, notes) VALUES (?, ?, ?, ?)',
+                     (game_id, achievement_id, item_type, notes))
+        conn.commit()
+        conn.close()
+    return redirect(url_for('monitor'))
+
+@app.route('/delete/<int:item_id>', methods=['POST'])
+def delete(item_id):
+    conn = get_db_connection()
+    conn.execute('DELETE FROM monitored_items WHERE id = ?', (item_id,))
+    conn.commit()
+    conn.close()
+    return redirect(url_for('monitor'))
+
+if __name__ == '__main__':
+    app.run(debug=True)

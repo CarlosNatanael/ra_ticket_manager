@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}RA Ticket Manager{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        nav { background: #1e1e1e; padding: 15px; border-bottom: 1px solid #333; margin-bottom: 20px; }
+        nav a { color: #007bff; text-decoration: none; margin-right: 20px; font-weight: bold; }
+        nav a:hover { color: #66b2ff; }
+        .badge { background: #dc3545; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.8em; }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="container">
+            <a href="{{ url_for('monitor') }}"><i class="bi bi-layout-text-window-reverse"></i> Monitorar Tickets</a>
+            <a href="{{ url_for('add_view') }}"><i class="bi bi-plus-square"></i> Adicionar Item</a>
+        </div>
+    </nav>
+    <div class="container">
+        {% block content %}{% endblock %}
+    </div>
+</body>
+</html>

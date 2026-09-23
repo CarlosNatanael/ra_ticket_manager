@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block title %}Adicionar - RA Ticket Manager{% endblock %}
+
+{% block content %}
+<div class="panel">
+    <h3>Monitorar Novo Item</h3>
+    <form action="{{ url_for('add') }}" method="POST" style="display: flex; flex-direction: column; gap: 15px;">
+        
+        <div>
+            <label style="display: block; margin-bottom: 5px;">Tipo de Monitoramento:</label>
+            <select name="item_type" style="width: 100%; max-width: 300px;">
+                <option value="achievement">Conquista (Exige Game ID e Achiev ID)</option>
+                <option value="game">Jogo Inteiro (Exige apenas Game ID)</option>
+            </select>
+        </div>
+
+        <div style="display: flex; gap: 20px;">
+            <div style="flex: 1; max-width: 300px;">
+                <label style="display: block; margin-bottom: 5px;">ID do Jogo (Obrigatório):</label>
+                <input type="number" name="game_id" required style="width: 100%;">
+            </div>
+            <div style="flex: 1; max-width: 300px;">
+                <label style="display: block; margin-bottom: 5px;">ID da Conquista (Opcional):</label>
+                <input type="number" name="achievement_id" style="width: 100%;">
+            </div>
+        </div>
+
+        <div>
+            <label style="display: block; margin-bottom: 5px;">Anotação (ex: Refiz o trigger em 23/09):</label>
+            <input type="text" name="notes" required style="width: 100%; max-width: 620px;">
+        </div>
+
+        <div>
+            <button type="submit">Cadastrar no Sistema</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% block title %}Monitorar - RA Ticket Manager{% endblock %}
+
+{% block content %}
+<div class="panel" style="padding: 0; border: none;">
+    <table>
+        <thead>
+            <tr>
+                <th>Tipo</th>
+                <th>IDs (Jogo / Conquista)</th>
+                <th>Anotações</th>
+                <th>Tickets Abertos</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <td>
+                    {% if item['item_type'] == 'achievement' %}
+                        🎮 Conquista
+                    {% else %}
+                        🕹️ Jogo
+                    {% endif %}
+                </td>
+                <td>
+                    {% if item['item_type'] == 'achievement' %}
+                        <!-- Link do AutoCR dinâmico -->
+                        <a href="https://carlosnatanael.github.io/AutoCR/#!/game/{{ item['game_id'] }}/achievement/{{ item['achievement_id'] }}" target="_blank" style="color: #66b2ff;">
+                            Ver Lógica (AutoCR)
+                        </a>
+                    {% else %}
+                        Jogo ID: {{ item['game_id'] }}
+                    {% endif %}
+                </td>
+                <td>{{ item['notes'] }}</td>
+                <td>
+                    <span class="badge">{{ item['ticket_count'] }} tickets</span>
+                </td>
+                <td>
+                    <form action="{{ url_for('delete', item_id=item['id']) }}" method="POST" style="margin: 0;">
+                        <button type="submit" class="btn-danger" style="padding: 6px 12px; font-size: 0.9em;">Remover</button>
+                    </form>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="5" style="text-align: center; padding: 20px; color: #888;">
+                    Nenhum item sendo monitorado. Vá em "Adicionar Item".
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
