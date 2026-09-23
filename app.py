@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for, Response
+from worker import check_tickets
 from dotenv import load_dotenv
 from datetime import datetime
 from functools import wraps
@@ -16,6 +17,8 @@ RA_API_BASE = "https://retroachievements.org/API/"
 
 ADMIN_USER = os.getenv('ADMIN_USER')
 ADMIN_PASS = os.getenv('ADMIN_PASS')
+
+WEBHOOK_SECRET_KEY = os.getenv('WEBHOOK_SECRET_KEY')
 
 def check_auth(username, password):
     return username == ADMIN_USER and password == ADMIN_PASS
@@ -146,6 +149,14 @@ def delete(item_id):
     conn.commit()
     conn.close()
     return redirect(url_for('monitor'))
+
+@app.route(f'/run-worker-trigger/{WEBHOOK_SECRET_KEY}', methods=['GET'])
+def run_worker_trigger():
+    try:
+        check_tickets()
+        return "Worker executado com sucesso via trigger externo!", 200
+    except Exception as e:
+        return f"Erro ao executar o worker: {str(e)}", 500
 
 if __name__ == '__main__':
     app.run(debug=True)
