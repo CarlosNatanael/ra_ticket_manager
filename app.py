@@ -1,8 +1,9 @@
-import os
-import requests
 from flask import Flask, render_template, request, redirect, url_for
-import sqlite3
+from datetime import datetime
 from dotenv import load_dotenv
+import requests
+import sqlite3
+import os
 
 load_dotenv()
 
@@ -15,14 +16,25 @@ RA_API_BASE = "https://retroachievements.org/API/"
 def get_db_connection():
     conn = sqlite3.connect(DB_NAME)
     conn.row_factory = sqlite3.Row
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS system_info (
+            key TEXT PRIMARY KEY,
+            value TEXT
+        )
+    ''')
+    conn.commit()
     return conn
 
 @app.route('/')
 def monitor():
     conn = get_db_connection()
     items = conn.execute('SELECT * FROM monitored_items').fetchall()
+    
+    sync_data = conn.execute("SELECT value FROM system_info WHERE key = 'last_sync'").fetchone()
+    last_sync = sync_data['value'] if sync_data else "Nunca sincronizado"
+    
     conn.close()
-    return render_template('monitor.html', items=items)
+    return render_template('monitor.html', items=items, last_sync=last_sync)
 
 @app.route('/add_view')
 def add_view():
@@ -40,7 +52,6 @@ def add():
 
     if game_id and item_type:
         title = "Desconhecido"
-        # Definindo o fallback padrão do RA (00000)
         icon_url = "https://media.retroachievements.org/Badge/00000.png"
 
         if item_type == 'game':
@@ -56,15 +67,13 @@ def add():
             except Exception as e:
                 title = f'Jogo {game_id}'
         else:
-            # É uma conquista: Puxamos os dados estendidos do jogo e filtramos a conquista exata
             params = {'z': RA_USER, 'y': RA_KEY, 'i': game_id}
             try:
                 resp = requests.get(f"{RA_API_BASE}API_GetGameExtended.php", params=params, timeout=5)
                 if resp.status_code == 200:
                     data = resp.json()
                     achievements = data.get('Achievements', {})
-                    
-                    # A chave no dicionário de conquistas do RA é uma string do ID
+
                     ach_data = achievements.get(str(achievement_id))
                     
                     if ach_data:

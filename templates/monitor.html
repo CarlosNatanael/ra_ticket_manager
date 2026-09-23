@@ -3,6 +3,11 @@
 
 {% block content %}
 <div class="panel" style="padding: 0; border: none;">
+    <div style="padding: 15px; background: #2a2a2a; border-bottom: 1px solid var(--border); border-radius: 8px 8px 0 0; display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-size: 0.9em; color: #aaa;">
+            Última checagem no servidor: <strong style="color: #fff;">{{ last_sync }}</strong>
+        </span>
+    </div>
     <table>
         <thead>
             <tr>
