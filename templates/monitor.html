@@ -3,24 +3,34 @@
 
 {% block content %}
 <div class="panel" style="padding: 0; border: none;">
-    <div style="padding: 15px; background: #2a2a2a; border-bottom: 1px solid var(--border); border-radius: 8px 8px 0 0; display: flex; justify-content: space-between; align-items: center;">
+
+    <div style="padding: 15px; background: #2a2a2a; border-bottom: 1px solid var(--border); border-radius: 8px 8px 0 0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
         <span style="font-size: 0.9em; color: #aaa;">
-            Última checagem no servidor: <strong style="color: #fff;">{{ last_sync }}</strong>
+            ⏱️ Última checagem no servidor: <strong style="color: #fff;">{{ last_sync }}</strong>
         </span>
+        <div>
+            <label for="typeFilter" style="color: #aaa; font-size: 0.9em; margin-right: 5px;">Exibir:</label>
+            <select id="typeFilter" onchange="filterTable()" style="padding: 4px 8px; background: #1e1e1e; color: #fff; border: 1px solid #444; border-radius: 4px; font-size: 0.9em;">
+                <option value="all">Todos os Itens</option>
+                <option value="game">Apenas Sets (Jogos)</option>
+                <option value="achievement">Apenas Conquistas</option>
+            </select>
+        </div>
     </div>
-    <table>
+    <table id="monitorTable">
         <thead>
             <tr>
-                <th>Item Monitorado</th>
+                <th onclick="sortTable(0, false)" style="cursor: pointer;" title="Clique para ordenar">Item Monitorado</th>
                 <th>AutoCR</th>
                 <th>Sua Anotação</th>
-                <th>Tickets Abertos</th>
+                <th title="Última vez que a anotação foi editada">Última Modificação</th>
+                <th onclick="sortTable(4, true)" style="cursor: pointer;" title="Clique para ordenar por quantidade">Tickets Abertos</th>
                 <th>Ações</th>
             </tr>
         </thead>
         <tbody>
             {% for item in items %}
-            <tr>
+            <tr data-type="{{ item['item_type'] }}">
                 <td>
                     <div style="display: flex; align-items: center; gap: 15px;">
                         {% if item['icon_url'] %}
@@ -28,7 +38,6 @@
                         {% else %}
                             <div style="width: 48px; height: 48px; background: #333; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 1.5em;">🎮</div>
                         {% endif %}
-                        
                         <div style="display: flex; flex-direction: column;">
                             <strong style="font-size: 1.1em; color: #fff;">{{ item['title'] }}</strong>
                             <span style="font-size: 0.8em; color: #aaa;">
@@ -43,31 +52,40 @@
                 </td>
                 <td>
                     {% if item['item_type'] == 'achievement' %}
-                        <a href="https://carlosnatanael.github.io/AutoCR/#!/game/{{ item['game_id'] }}/achievement/{{ item['achievement_id'] }}" target="_blank" style="color: #66b2ff; text-decoration: none; font-weight: bold;">
-                            🔗 Ver Lógica
-                        </a>
+                        <a href="https://carlosnatanael.github.io/AutoCR/#!/game/{{ item['game_id'] }}/achievement/{{ item['achievement_id'] }}" target="_blank" style="color: #66b2ff; text-decoration: none; font-weight: bold;">Ver Lógica</a>
                     {% else %}
-                        <a href="https://carlosnatanael.github.io/AutoCR/#!/game/{{ item['game_id'] }}" target="_blank" style="color: #66b2ff; text-decoration: none; font-weight: bold;">
-                            🔗 Ver Set Inteiro
-                        </a>
+                        <a href="https://carlosnatanael.github.io/AutoCR/#!/game/{{ item['game_id'] }}" target="_blank" style="color: #66b2ff; text-decoration: none; font-weight: bold;">Ver Set Inteiro</a>
                     {% endif %}
                 </td>
-                <td style="color: #ddd;">{{ item['notes'] }}</td>
-                <td>
-                    {% if item['item_type'] == 'achievement' %}
-                        <a href="https://retroachievements.org/achievement/{{ item['achievement_id'] }}/tickets" target="_blank" style="text-decoration: none;">
-                            <span class="badge" style="font-size: 1em; padding: 4px 10px; cursor: pointer;">
-                                {{ item['ticket_count'] }} tickets
-                            </span>
-                        </a>
-                    {% else %}
-                        <a href="https://retroachievements.org/game/{{ item['game_id'] }}/tickets" target="_blank" style="text-decoration: none;">
-                            <span class="badge" style="font-size: 1em; padding: 4px 10px; cursor: pointer;">
-                                {{ item['ticket_count'] }} tickets
-                            </span>
-                        </a>
-                    {% endif %}
+                <td style="color: #ddd;">
+                    <div id="note-view-{{ item['id'] }}" style="display: flex; align-items: center; gap: 10px;">
+                        <span>{{ item['notes'] }}</span>
+                        <button type="button" onclick="document.getElementById('note-view-{{ item['id'] }}').style.display='none'; document.getElementById('note-edit-{{ item['id'] }}').style.display='block';" style="background: transparent; border: none; font-size: 1.2em; padding: 0;"><i class="bi bi-pencil-square"></i></button>
+                    </div>
+                    <form id="note-edit-{{ item['id'] }}" action="{{ url_for('edit_note', item_id=item['id']) }}" method="POST" style="display: none; margin: 0; white-space: nowrap;">
+                        <input type="text" name="notes" value="{{ item['notes'] }}" style="width: 150px; padding: 6px; font-size: 0.9em;">
+                        <button type="submit" style="padding: 6px 10px; font-size: 0.9em;">Salvar</button>
+                        <button type="button" onclick="document.getElementById('note-edit-{{ item['id'] }}').style.display='none'; document.getElementById('note-view-{{ item['id'] }}').style.display='flex';" style="padding: 6px 10px; font-size: 0.9em; background: #6c757d;">X</button>
+                    </form>
                 </td>
+                <td style="font-size: 0.85em; color: #888;">
+                    {{ item['last_modified'] if item['last_modified'] else '---' }}
+                </td>
+                <td class="nowrap">
+                        {% if item['item_type'] == 'achievement' %}
+                            <a href="https://retroachievements.org/achievement/{{ item['achievement_id'] }}/tickets" target="_blank" style="text-decoration: none;">
+                                <span class="badge" style="font-size: 1em; padding: 6px 12px; cursor: pointer; display: inline-block; white-space: nowrap; min-width: 85px; text-align: center;">
+                                    {{ item['ticket_count'] }} tickets
+                                </span>
+                            </a>
+                        {% else %}
+                            <a href="https://retroachievements.org/game/{{ item['game_id'] }}/tickets" target="_blank" style="text-decoration: none;">
+                                <span class="badge" style="font-size: 1em; padding: 6px 12px; cursor: pointer; display: inline-block; white-space: nowrap; min-width: 85px; text-align: center;">
+                                    {{ item['ticket_count'] }} tickets
+                                </span>
+                            </a>
+                        {% endif %}
+                    </td>
                 <td>
                     <form action="{{ url_for('delete', item_id=item['id']) }}" method="POST" style="margin: 0;">
                         <button type="submit" class="btn-danger" style="padding: 6px 12px; font-size: 0.9em; border-radius: 4px;">Excluir</button>
@@ -76,12 +94,72 @@
             </tr>
             {% else %}
             <tr>
-                <td colspan="5" style="text-align: center; padding: 30px; color: #888; font-style: italic;">
-                    Sua lista está vazia. Cadastre novos jogos ou conquistas no menu acima.
-                </td>
+                <td colspan="6" style="text-align: center; padding: 30px; color: #888; font-style: italic;">Sua lista está vazia.</td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
 </div>
+<script>
+function sortTable(n, isNumeric) {
+    var table, rows, switching, i, x, y, shouldSwitch, dir, switchcount = 0;
+    table = document.getElementById("monitorTable");
+    switching = true;
+    dir = "asc"; 
+    
+    while (switching) {
+        switching = false;
+        rows = table.rows;
+        
+        for (i = 1; i < (rows.length - 1); i++) {
+            shouldSwitch = false;
+            x = rows[i].getElementsByTagName("TD")[n];
+            y = rows[i + 1].getElementsByTagName("TD")[n];
+            
+            let valX = x.innerText.toLowerCase();
+            let valY = y.innerText.toLowerCase();
+            
+            if (isNumeric) {
+
+                valX = parseInt(valX.replace(/\D/g,'')) || 0;
+                valY = parseInt(valY.replace(/\D/g,'')) || 0;
+            }
+            
+            if (dir == "asc") {
+                if (valX > valY) { shouldSwitch = true; break; }
+            } else if (dir == "desc") {
+                if (valX < valY) { shouldSwitch = true; break; }
+            }
+        }
+        
+        if (shouldSwitch) {
+            rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+            switching = true;
+            switchcount++;
+        } else {
+            if (switchcount == 0 && dir == "asc") {
+                dir = "desc";
+                switching = true;
+            }
+        }
+    }
+}
+function filterTable() {
+    var filterValue = document.getElementById("typeFilter").value;
+    var table = document.getElementById("monitorTable");
+    var tr = table.getElementsByTagName("tbody")[0].getElementsByTagName("tr");
+
+    for (var i = 0; i < tr.length; i++) {
+        if (tr[i].getElementsByTagName("td").length === 1) continue;
+
+        var rowType = tr[i].getAttribute("data-type");
+        
+        if (filterValue === "all" || filterValue === rowType) {
+            tr[i].style.display = "";
+        } else {
+            tr[i].style.display = "none";
+        }
+    }
+}
+</script>
 {% endblock %}

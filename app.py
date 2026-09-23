@@ -43,6 +43,11 @@ def get_db_connection():
             value TEXT
         )
     ''')
+    try:
+        conn.execute('ALTER TABLE monitored_items ADD COLUMN last_modified TEXT')
+    except sqlite3.OperationalError:
+        pass
+    
     conn.commit()
     return conn
 
@@ -119,6 +124,20 @@ def add():
         
     return redirect(url_for('monitor'))
 
+@app.route('/edit/<int:item_id>', methods=['POST'])
+@requires_auth
+def edit_note(item_id):
+    new_notes = request.form['notes']
+    agora = datetime.now().strftime("%d/%m/%Y %H:%M")
+    
+    conn = get_db_connection()
+    conn.execute('UPDATE monitored_items SET notes = ?, last_modified = ? WHERE id = ?', 
+                 (new_notes, agora, item_id))
+    conn.commit()
+    conn.close()
+    
+    return redirect(url_for('monitor'))
+
 @app.route('/delete/<int:item_id>', methods=['POST'])
 @requires_auth
 def delete(item_id):
@@ -129,4 +148,4 @@ def delete(item_id):
     return redirect(url_for('monitor'))
 
 if __name__ == '__main__':
-    app.run(debug=False)
+    app.run(debug=True)
