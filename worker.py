@@ -13,9 +13,6 @@ RA_KEY = os.getenv('RA_API_KEY')
 
 RA_API_BASE = "https://retroachievements.org/API/"
 
-# Fuso horário de Brasília (UTC-3)
-fuso_br = timezone(timedelta(hours=-3))
-
 def send_discord_alert(item, ticket_id, ticket_note):
     tipo = "Conquista" if item['item_type'] == 'achievement' else "Jogo"
     ra_id = item['achievement_id'] if item['item_type'] == 'achievement' else item['game_id']
@@ -109,6 +106,7 @@ def check_tickets():
         
         conn.commit()
 
+    fuso_br = timezone(timedelta(hours=-3))
     agora = datetime.now(fuso_br).strftime("%d/%m/%Y às %H:%M:%S")
     cursor.execute('INSERT OR REPLACE INTO system_info (key, value) VALUES (?, ?)', ('last_sync', agora))
     conn.commit()

@@ -57,6 +57,11 @@ def get_db_connection():
 @app.route('/')
 @requires_auth
 def monitor():
+    try:
+        check_tickets()
+    except Exception as e:
+        print(f"Erro ao atualizar tickets no refresh do site: {e}")
+
     conn = get_db_connection()
     items = conn.execute('SELECT * FROM monitored_items').fetchall()
     
